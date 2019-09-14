@@ -6,7 +6,6 @@ use SilverStripe\Core\Environment;
 use SilverStripe\Core\Injector\Injector;
 use SilverStripe\Core\Manifest\ModuleResourceLoader;
 use SilverStripe\Control\Director;
-use SilverStripe\ORM\DB;
 
 trait BuildTaskOutput
 {
@@ -81,26 +80,27 @@ trait BuildTaskOutput
         }
         @ob_start();
 
-        if (Director::is_cli()) {
-            $message = strip_tags($message);
-        }
-
-        if ($this->is_list) {
+        if ($this->is_list && ! Director::is_cli()) {
             if(! $this->has_started){
                 $this->begin();
             }
-            DB::alteration_message(
-                $this->wrapMessageWithTag($message, $tag),
-                $this->getMessageType($type)
-            );
+            $class = $this->getMessageType($type);
+            $message = $this->wrapMessageWithTag($message, $tag);
+            echo "<li class=\"$class\">$message</li>";
         } else {
             if (Director::is_cli()) {
-                echo $message;
+                $this->outputCliMessage($message, $type);
             }
             else {
                 echo $this->wrapMessageWithTag($message, $tag);
             }
         }
+    }
+
+    public function outputCliMessage($message, $type){
+        $sign = $this->getMessageType($type);
+        $message = strip_tags($message);
+        echo "  $sign $message\n";
     }
 
     public function wrapMessageWithTag($tag){
@@ -111,26 +111,35 @@ trait BuildTaskOutput
     }
 
     public function getMessageType($type){
+        $class = '';
+        $sign = ' ';
         switch ($type) {
             case "info":
             case "blue":
-                return 'changed';
+                $sign = '-';
+                $class = "info";
                 break;
             case "success":
             case "green":
-                return 'created';
+                $sign = "+";
+                $class = "success";
                 break;
             case "warning":
             case "yellow":
             case "orange":
-                return 'notice';
+                $sign = '*';
+                $class = "warning";
                 break;
             case "error":
             case "red":
-                return 'deleted';
+                $sign = "!";
+                $class = "error";
                 break;
-            default:
-                return '';
         }
+
+        if (Director::is_cli()) {
+            return $sign;
+        }
+        return $class;
     }
 }

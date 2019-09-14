@@ -1,6 +1,6 @@
 {
     "name": "mysite-digital/silverstripe-build-task-output",
-    "description": "A collection of functions to improve output of messgaes.",
+    "description": "A collection of functions to improve output of messages when developing build tasks.",
     "authors": [
         {
             "name": "My Site Digital",
