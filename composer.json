@@ -1,0 +1,30 @@
+{
+    "name": "MySiteDigital/silverstripe-build-task-output",
+    "description": "A collection of functions to improve output of messgaes.",
+    "authors": [
+        {
+            "name": "My Site Digital",
+            "homepage": "https://github.com/MySiteDigital/"
+        }
+    ],
+    "keywords": [
+        "silverstripe", "dev/tasks", "buildtask"
+    ],
+    "type": "silverstripe-vendormodule",
+    "license": "BSD-3-Clause",
+    "require": {
+        "silverstripe/framework": "^4"
+    },
+    "extra": {
+        "expose": [
+            "client"
+        ]
+    },
+    "autoload": {
+        "psr-4": {
+            "MySiteDigital\\": "src/"
+        }
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}
