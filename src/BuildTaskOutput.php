@@ -6,6 +6,7 @@ use SilverStripe\Core\Environment;
 use SilverStripe\Core\Injector\Injector;
 use SilverStripe\Core\Manifest\ModuleResourceLoader;
 use SilverStripe\Control\Director;
+use Dompdf\Dompdf;
 
 trait BuildTaskOutput
 {
@@ -13,9 +14,11 @@ trait BuildTaskOutput
 
     protected $has_started = false;
 
-    protected $file_name = '';
+    protected $html_output = '';
+    
+    protected $file_name = ''; //without extension
 
-    protected $file_path = '';
+    protected $file_path = ''; //full path excluding trailing slash
 
     public function setIsList($bool){
         $this->is_list = $bool;
@@ -37,19 +40,48 @@ trait BuildTaskOutput
 
     public function begin()
     {
-        $this->increaseMemoryAndTimeLimit();
-        $loader = Injector::inst()->get(ModuleResourceLoader::class);
-        $css = $loader->resolveURL('MySiteDigital/silverstripe-build-task-output: client/css/style.css');
-        echo '
-                <link href="' . $css . '" rel="stylesheet">
-                <ul class="build">';
         $this->has_started = true;
+        $this->increaseMemoryAndTimeLimit();
+        $output = '<ul class="build">';
+
+        if (!Director::is_cli()) {
+            echo '<link href="' . $this->getCSSFile() . '" rel="stylesheet">';
+            echo $output;
+        }
+        
+        $this->html_output = '<link href="' . $this->getCSSFile(true) . '" rel="stylesheet">';
+        $this->html_output .= $output;
     }
 
     public function complete()
     {
         $this->is_list = false;
         $this->message('</ul>', '');
+
+        if($this->file_name){
+            $outputPath = $this->file_path ?: BASE_PATH;
+            $fileLocation = $outputPath . '/' . $this->file_name . '-' . date('Y-m-d') . '.pdf';
+
+            $dompdf = new Dompdf();
+            $dompdf->loadHtml($this->html_output);
+            $dompdf->render();
+
+            $output = $dompdf->output();
+            file_put_contents(
+                $fileLocation, 
+                $output
+            );
+        }
+    }
+
+    public function getCSSFile($fullPath = false){
+        $loader = Injector::inst()->get(ModuleResourceLoader::class);
+        if($fullPath){
+            return BASE_PATH . '/' . $loader->resolvePath('mysite-digital/silverstripe-build-task-output: client/css/style.css');
+        }
+        else {
+            return $loader->resolveURL('mysite-digital/silverstripe-build-task-output: client/css/style.css');
+        }
     }
 
     /**
@@ -80,30 +112,44 @@ trait BuildTaskOutput
         }
         @ob_start();
 
-        if ($this->is_list && ! Director::is_cli()) {
-            if(! $this->has_started){
-                $this->begin();
-            }
-            $class = $this->getMessageType($type);
-            $message = $this->wrapMessageWithTag($message, $tag);
-            echo "<li class=\"$class\">$message</li>";
-        } else {
-            if (Director::is_cli()) {
-                $this->outputCliMessage($message, $type);
-            }
-            else {
-                echo $this->wrapMessageWithTag($message, $tag);
-            }
+        $html = $this->getBrowserMessage($message, $type, $tag);
+        if (Director::is_cli()) {
+            $mesage = $this->getCliMessage($message, $type);
         }
+        else {
+            $mesage = $html;
+        }
+        echo $mesage;
+
+        $this->addMessageToPDFOutput($html);
     }
 
-    public function outputCliMessage($message, $type){
+    public function getCliMessage($message, $type = ''){
         $sign = $this->getMessageType($type);
         $message = strip_tags($message);
         echo "  $sign $message\n";
     }
 
-    public function wrapMessageWithTag($tag){
+    public function getBrowserMessage($message, $type = '', $tag = ''){
+        $message = $this->wrapMessageWithTag($message, $tag);
+
+        if ($this->is_list){
+            if(! $this->has_started){
+                $this->begin();
+            }
+            $class = $this->getMessageType($type);
+            return "<li class=\"$class\">$message</li>";
+        }
+        else {
+            return $message;
+        }
+    }
+
+    public function addMessageToPDFOutput($message){
+        $this->html_output .= $message;
+    }
+
+    public function wrapMessageWithTag($message, $tag){
         if($tag){
             return '<' . $tag . '>' . $message . '</' . $tag . '>';
         }
