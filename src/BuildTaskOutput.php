@@ -67,7 +67,7 @@ trait BuildTaskOutput
      *                      orange      #8a6d3b
      *                      error       #d30000
      *                      red         #d30000
-     * @param boolean $tag html heading tag if required
+     * @param boolean $tag html tag if required: h1, h2, h3, h4, p, etc (only works for non self closing tags)
      *
      **/
     public function message($message, $type = '', $tag = '')
@@ -80,20 +80,34 @@ trait BuildTaskOutput
             @ob_end_flush();
         }
         @ob_start();
+
         if (Director::is_cli()) {
             $message = strip_tags($message);
         }
+
         if ($this->is_list) {
             if(! $this->has_started){
                 $this->begin();
             }
             DB::alteration_message(
-                $message, 
+                $this->wrapMessageWithTag($message, $tag),
                 $this->getMessageType($type)
             );
         } else {
-            echo $message;
+            if (Director::is_cli()) {
+                echo $message;
+            }
+            else {
+                echo $this->wrapMessageWithTag($message, $tag);
+            }
         }
+    }
+
+    public function wrapMessageWithTag($tag){
+        if($tag){
+            return '<' . $tag . '>' . $message . '</' . $tag . '>';
+        }
+        return $message;
     }
 
     public function getMessageType($type){
