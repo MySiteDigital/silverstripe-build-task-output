@@ -8,7 +8,7 @@
         }
     ],
     "keywords": [
-        "silverstripe", "dev/tasks", "buildtask"
+        "silverstripe", "devtasks", "buildtask"
     ],
     "type": "silverstripe-vendormodule",
     "license": "BSD-3-Clause",
