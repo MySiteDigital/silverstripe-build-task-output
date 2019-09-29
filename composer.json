@@ -21,11 +21,6 @@
             "client"
         ]
     },
-    "autoload": {
-        "psr-4": {
-            "MySiteDigital\\": "src/"
-        }
-    },
     "minimum-stability": "dev",
     "prefer-stable": true
 }
